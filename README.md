@@ -1,5 +1,7 @@
 # 🎵 MSST & WebUI - One-Click Portable Installer 🚀
 
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Compiled%20(Coming%20Soon)-grey)](https://huggingface.co/)
+
 Welcome! This repository provides **fully automated and portable** installers for two powerful AI-based music source separation tools (vocal removal, stems splitting, etc.). 
 
 No Python, Conda, or driver configuration knowledge required. The script handles the heavy lifting for you! 😎
