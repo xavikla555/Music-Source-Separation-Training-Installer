@@ -62,5 +62,3 @@ Once the installation is finished, your directory will be organized as follows:
 Huge thanks to the creators of the original tools:
 * [ZFTurbo](https://github.com/ZFTurbo/Music-Source-Separation-Training) – For the engine and models.
 * [SUC-DriverOld](https://github.com/SUC-DriverOld/MSST-WebUI) – For the excellent WebUI.
-
----
