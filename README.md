@@ -1,6 +1,14 @@
 # 🎵 MSST & WebUI - One-Click Portable Installer 🚀
 
-[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Compiled%20(Coming%20Soon)-grey)](https://huggingface.co/)
+---
+
+## 📥 Direct Download
+
+[![Download WebUI Installer](https://img.shields.io/badge/Download-WebUI_Installer-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://raw.githack.com/xavikla555/Music-Source-Separation-Training-Installer/main/MSST-WebUI_install.bat)<br>
+[![Download MSST Installer](https://img.shields.io/badge/Download-MSST_Installer-2ea44f?style=for-the-badge&logo=github&logoColor=white)](https://raw.githack.com/xavikla555/Music-Source-Separation-Training-Installer/main/MSST_install.bat)<br>
+![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Compiled%20(Soon)-grey?style=for-the-badge&logo=huggingface&logoColor=FFD21E)
+
+---
 
 Welcome! This repository provides **fully automated and portable** installers for two powerful AI-based music source separation tools (vocal removal, stems splitting, etc.). 
 
