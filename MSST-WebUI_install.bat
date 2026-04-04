@@ -160,7 +160,7 @@ echo [PROCESS] Installing PyTorch suite...
 echo [URL] Target: %PYTORCH_INDEX%
 
 REM Install PyTorch with priority for the selected CUDA index
-pip install torch torchvision torchaudio --index-url %PYTORCH_INDEX% --extra-index-url https://pypi.org/simple
+pip install torch torchvision torchaudio --index-url "%PYTORCH_INDEX%" --extra-index-url https://pypi.org/simple
 
 if errorlevel 1 (
     echo [ERROR] PyTorch installation failed.
