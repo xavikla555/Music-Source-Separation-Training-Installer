@@ -34,13 +34,20 @@ set /a startSec=1%t:~6,2% %% 100
 set /a startTotal=startHour*3600+startMin*60+startSec
 
 REM =======================================================
-REM  3. CLEANUP PREVIOUS INSTALLATIONS
+REM  3. CLEANUP / VALIDATION PREVIOUS INSTALLATIONS
 REM =======================================================
-echo [PROCESS] Cleaning up previous installation folder...
 if exist "%REPO_DIR%" (
-    rmdir /s /q "%REPO_DIR%"
+    echo [WARNING] Folder "%REPO_NAME%" already exists.
+    set /p "CHOICE=Do you want to DELETE the existing folder and reinstall? (y/n): "
+    if /i "!CHOICE!"=="y" (
+        echo [PROCESS] Removing old installation...
+        rmdir /s /q "%REPO_DIR%"
+        echo [SUCCESS] Cleanup complete.
+    ) else (
+        echo [INFO] Installation canceled by user to protect existing folder.
+        pause
+    )
 )
-echo [SUCCESS] Cleanup complete.
 echo.
 
 REM =======================================================
@@ -97,8 +104,8 @@ if errorlevel 1 (
 REM =======================================================
 REM  6. CONDA ENVIRONMENT CREATION
 REM =======================================================
-echo [PROCESS] Creating local Conda environment (Python 3.12)...
-"%CONDA_EXE%" create --prefix "%ENV_DIR%" python=3.12 -y
+echo [PROCESS] Creating local Conda environment (Python 3.10)...
+"%CONDA_EXE%" create --prefix "%ENV_DIR%" python=3.10 -y
 if errorlevel 1 (
     echo [ERROR] Failed to create the Conda environment.
     goto :error_exit
@@ -162,14 +169,27 @@ if errorlevel 1 (
 
 echo [PROCESS] Installing project requirements...
 pip install -r "%REPO_DIR%\requirements.txt"
+
 if errorlevel 1 (
     echo [ERROR] Failed to install requirements.txt.
     call "%MINICONDA_DIR%\condabin\conda.bat" deactivate
     goto :error_exit
 )
 
+REM ----------- Librosa FIX -----------
+echo [PROCESS] Applying Librosa version fix...
+cd /d "%REPO_DIR%"
+pip uninstall librosa -y
+pip install "tools/webUI_for_clouds/librosa-0.9.2-py3-none-any.whl"
+if errorlevel 1 (
+    echo [ERROR] Failed to install Librosa wheel.
+    call "%MINICONDA_DIR%\condabin\conda.bat" deactivate
+    goto :error_exit
+)
+REM -----------------------------------
+
 call "%MINICONDA_DIR%\condabin\conda.bat" deactivate
-echo [SUCCESS] Dependencies setup complete for RTX 50-series.
+echo [SUCCESS] Dependencies setup complete.
 echo.
 
 REM =======================================================
