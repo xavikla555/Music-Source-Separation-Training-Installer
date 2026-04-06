@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 title MSST-WebUI - Installer
 
 echo =======================================================
-echo    Music Source Separation Training UI - Installer
+echo  Music Source Separation Training UI - Installer
 echo =======================================================
 echo.
 
@@ -18,11 +18,15 @@ if "%INSTALL_DIR:~-1%"=="\" set "INSTALL_DIR=%INSTALL_DIR:~0,-1%"
 REM Project configuration
 set "REPO_NAME=MSST-WebUI"
 set "REPO_DIR=%INSTALL_DIR%\%REPO_NAME%"
+
+REM Micromamba portable paths - NOW INSIDE REPO DIR
+set "MICROMAMBA_DIR=%REPO_DIR%\micromamba"
+set "MAMBA_EXE=%MICROMAMBA_DIR%\micromamba.exe"
+set "MAMBA_ROOT_PREFIX=%MICROMAMBA_DIR%\root"
 set "ENV_DIR=%REPO_DIR%\env"
-set "MINICONDA_DIR=%UserProfile%\Miniconda3"
-set "CONDA_EXE=%MINICONDA_DIR%\Scripts\conda.exe"
+
 set "REPO_URL=https://github.com/SUC-DriverOld/MSST-WebUI.git"
-set "MINICONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-py312_25.11.1-1-Windows-x86_64.exe"
+set "MICROMAMBA_URL=https://micro.mamba.pm/api/micromamba/win-64/latest"
 
 REM =======================================================
 REM  2. PERFORMANCE TIMER START
@@ -46,34 +50,42 @@ if exist "%REPO_DIR%" (
     ) else (
         echo [INFO] Installation canceled by user to protect existing folder.
         pause
+        exit /b 1
     )
 )
 echo.
 
 REM =======================================================
-REM  4. MINICONDA INSTALLATION CHECK/DOWNLOAD
+REM  4. PRE-CREATE REPO DIR AND MICROMAMBA SETUP
 REM =======================================================
-if exist "%CONDA_EXE%" (
-    echo [INFO] Miniconda is already installed. Skipping download...
+REM We need to create the repo dir first since micromamba now lives inside it
+if not exist "%REPO_DIR%" mkdir "%REPO_DIR%"
+
+if exist "%MAMBA_EXE%" (
+    echo [INFO] Micromamba binary is already present. Skipping download...
 ) else (
-    echo [PROCESS] Miniconda not found. Downloading via curl...
-    curl -L -o miniconda.exe "%MINICONDA_URL%"
+    echo [PROCESS] Downloading portable Micromamba...
+    if not exist "%MICROMAMBA_DIR%" mkdir "%MICROMAMBA_DIR%"
     
-    if not exist "miniconda.exe" (
-        echo [ERROR] Miniconda download failed. Please check your internet connection.
+    curl -L "%MICROMAMBA_URL%" -o "%MICROMAMBA_DIR%\micromamba.tar.bz2"
+    
+    if not exist "%MICROMAMBA_DIR%\micromamba.tar.bz2" (
+        echo [ERROR] Micromamba download failed. Please check your internet connection.
         goto :error_exit
     )
     
-    echo [PROCESS] Installing Miniconda silently to: %MINICONDA_DIR%
-    start /wait "" miniconda.exe /InstallationType=JustMe /RegisterPython=0 /S /D=%MINICONDA_DIR%
+    echo [PROCESS] Extracting Micromamba...
+    tar -xf "%MICROMAMBA_DIR%\micromamba.tar.bz2" -C "%MICROMAMBA_DIR%" Library/bin/micromamba.exe
     
-    if errorlevel 1 (
-        echo [ERROR] Miniconda installation failed.
-        del miniconda.exe >nul 2>&1
+    move "%MICROMAMBA_DIR%\Library\bin\micromamba.exe" "%MAMBA_EXE%" >nul
+    rmdir /s /q "%MICROMAMBA_DIR%\Library"
+    del "%MICROMAMBA_DIR%\micromamba.tar.bz2"
+    
+    if not exist "%MAMBA_EXE%" (
+        echo [ERROR] Failed to extract Micromamba.
         goto :error_exit
     )
-    del miniconda.exe >nul 2>&1
-    echo [SUCCESS] Miniconda installed successfully.
+    echo [SUCCESS] Micromamba downloaded and extracted.
 )
 echo.
 
@@ -84,30 +96,43 @@ echo [PROCESS] Checking Git installation...
 set "GIT_CMD=git"
 git --version >nul 2>&1
 if errorlevel 1 (
-    echo [INFO] System Git not found. Installing Git via Conda...
-    "%CONDA_EXE%" install -y -c anaconda git
+    echo [INFO] System Git not found. Installing portable Git via Micromamba...
+    "%MAMBA_EXE%" create -n base git -c conda-forge -y
     if errorlevel 1 (
         echo [ERROR] Failed to install Git.
         goto :error_exit
     )
-    REM Set path to Conda-installed Git if system Git is unavailable
-    set "GIT_CMD=%MINICONDA_DIR%\Library\bin\git.exe"
+    set "GIT_CMD=%MAMBA_ROOT_PREFIX%\Library\bin\git.exe"
 )
 
 echo [PROCESS] Cloning MSST-WebUI repository...
-"!GIT_CMD!" clone --recurse-submodules "%REPO_URL%" "%REPO_DIR%"
+"!GIT_CMD!" clone --recurse-submodules "%REPO_URL%" "%REPO_DIR%_temp"
 if errorlevel 1 (
     echo [ERROR] Failed to clone the repository.
     goto :error_exit
 )
 
+echo [PROCESS] Moving files to main directory...
+REM Robocopy Exit Codes: 0-7 are success (various states), 8+ are critical errors.
+robocopy "%REPO_DIR%_temp" "%REPO_DIR%" /E /MOVE /NFL /NDL /NJH /NJS
+if %errorlevel% GEQ 8 (
+    echo [ERROR] Robocopy failed with exit code %errorlevel%.
+    rmdir /s /q "%REPO_DIR%_temp"
+    goto :error_exit
+)
+
+REM We remove the temp folder if robocopy left it (sometimes empty folders remain)
+if exist "%REPO_DIR%_temp" rmdir /s /q "%REPO_DIR%_temp"
+echo [SUCCESS] Repository prepared.
+echo.
+
 REM =======================================================
-REM  6. CONDA ENVIRONMENT CREATION
+REM  6. ENVIRONMENT CREATION
 REM =======================================================
-echo [PROCESS] Creating local Conda environment (Python 3.10)...
-"%CONDA_EXE%" create --prefix "%ENV_DIR%" python=3.10 -y
+echo [PROCESS] Creating local Micromamba environment (Python 3.10)...
+"%MAMBA_EXE%" create -p "%ENV_DIR%" python=3.10 -c conda-forge -y
 if errorlevel 1 (
-    echo [ERROR] Failed to create the Conda environment.
+    echo [ERROR] Failed to create the environment.
     goto :error_exit
 )
 echo [SUCCESS] Environment created at: %ENV_DIR%
@@ -116,8 +141,7 @@ echo.
 REM =======================================================
 REM  7. DEPENDENCY INSTALLATION (PyTorch & PIP)
 REM =======================================================
-echo [PROCESS] Activating environment and detecting CUDA...
-call "%MINICONDA_DIR%\condabin\conda.bat" activate "%ENV_DIR%"
+echo [PROCESS] Detecting CUDA...
 
 REM Default settings
 set "PYTORCH_INDEX=https://download.pytorch.org/whl/cu124"
@@ -159,36 +183,38 @@ if %errorlevel% equ 0 (
 echo [PROCESS] Installing PyTorch suite...
 echo [URL] Target: %PYTORCH_INDEX%
 
-REM Install PyTorch with priority for the selected CUDA index
-pip install torch torchvision torchaudio --index-url "%PYTORCH_INDEX%" --extra-index-url https://pypi.org/simple
-
+"%MAMBA_EXE%" run -p "%ENV_DIR%" pip install --no-cache-dir torch torchvision torchaudio --index-url "%PYTORCH_INDEX%" --extra-index-url https://pypi.org/simple
 if errorlevel 1 (
     echo [ERROR] PyTorch installation failed.
     goto :error_exit
 )
 
-echo [PROCESS] Installing project requirements...
-pip install -r "%REPO_DIR%\requirements.txt"
+echo [PROCESS] Cleaning requirements.txt (precise mode)...
+
+powershell -Command "$exclude = @('torch', 'torchvision', 'torchaudio'); (Get-Content '%REPO_DIR%\requirements.txt') | Where-Object { $_ -notin $exclude -and $_ -notmatch '^torch[>= ]' } | Out-File -Encoding UTF8 '%REPO_DIR%\requirements_clean.txt'"
 
 if errorlevel 1 (
-    echo [ERROR] Failed to install requirements.txt.
-    call "%MINICONDA_DIR%\condabin\conda.bat" deactivate
+    echo [ERROR] Failed to clean requirements.txt.
     goto :error_exit
 )
+
+echo [PROCESS] Installing project requirements...
+"%MAMBA_EXE%" run -p "%ENV_DIR%" pip install --no-cache-dir -r "%REPO_DIR%\requirements_clean.txt"
+
+REM Remove temporary file after successful installation
+del "%REPO_DIR%\requirements_clean.txt"
 
 REM ----------- Librosa FIX -----------
 echo [PROCESS] Applying Librosa version fix...
 cd /d "%REPO_DIR%"
-pip uninstall librosa -y
-pip install "tools/webUI_for_clouds/librosa-0.9.2-py3-none-any.whl"
+"%MAMBA_EXE%" run -p "%ENV_DIR%" pip uninstall librosa -y
+"%MAMBA_EXE%" run -p "%ENV_DIR%" pip install --no-cache-dir "tools/webUI_for_clouds/librosa-0.9.2-py3-none-any.whl"
 if errorlevel 1 (
     echo [ERROR] Failed to install Librosa wheel.
-    call "%MINICONDA_DIR%\condabin\conda.bat" deactivate
     goto :error_exit
 )
 REM -----------------------------------
 
-call "%MINICONDA_DIR%\condabin\conda.bat" deactivate
 echo [SUCCESS] Dependencies setup complete.
 echo.
 
@@ -206,21 +232,15 @@ echo REM Path resolution for portable execution
 echo set "REPO_DIR=%%~dp0"
 echo if "%%REPO_DIR:~-1%%"=="\" set "REPO_DIR=%%REPO_DIR:~0,-1%%"
 echo set "ENV_DIR=%%REPO_DIR%%\env"
-echo set "MINICONDA_DIR=%MINICONDA_DIR%"
+echo set "MICROMAMBA_DIR=%%REPO_DIR%%\micromamba"
+echo set "MAMBA_EXE=%%MICROMAMBA_DIR%%\micromamba.exe"
+echo set "MAMBA_ROOT_PREFIX=%%MICROMAMBA_DIR%%\root"
 echo.
-echo echo Activating environment...
-echo call "%%MINICONDA_DIR%%\condabin\conda.bat" activate "%%ENV_DIR%%"
-echo if errorlevel 1 ^(
-echo     echo ERROR: Failed to activate environment.
-echo     pause
-echo     exit /b 1
-echo ^)
-echo.
-echo echo Launching GUI...
+echo echo Launching GUI via Micromamba...
 echo cd /d "%%REPO_DIR%%"
-echo python webUI.py
+echo "%%MAMBA_EXE%%" run -p "%%ENV_DIR%%" python webUI.py
 echo.
-echo call "%%MINICONDA_DIR%%\condabin\conda.bat" deactivate
+echo pause
 ) > "%OUT_FILE%"
 
 if exist "%OUT_FILE%" (
