@@ -4,9 +4,9 @@
 
 ## 📥 Direct Download
 
-[![Download WebUI Installer](https://img.shields.io/badge/Download-WebUI_Installer-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://raw.githack.com/xavikla555/Music-Source-Separation-Training-Installer/main/MSST-WebUI_install.bat)
+[![Download WebUI Installer](https://img.shields.io/badge/Download-WebUI_Installer-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://raw.githack.com/xavikla555/MSST-Installer/main/MSST-WebUI_install.bat)
 
-[![Download MSST Installer](https://img.shields.io/badge/Download-MSST_Installer-2ea44f?style=for-the-badge&logo=github&logoColor=white)](https://raw.githack.com/xavikla555/Music-Source-Separation-Training-Installer/main/MSST_install.bat)
+[![Download MSST Installer](https://img.shields.io/badge/Download-MSST_Installer-2ea44f?style=for-the-badge&logo=github&logoColor=white)](https://raw.githack.com/xavikla555/MSST-Installer/main/MSST_install.bat)
 
 ![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Compiled%20(Soon)-grey?style=for-the-badge&logo=huggingface&logoColor=FFD21E)
 
