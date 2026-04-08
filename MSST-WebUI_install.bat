@@ -1,9 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
-title MSST-WebUI - Installer
+title MSST-WebUI - Installer (Micromamba Portable)
 
 echo =======================================================
 echo  Music Source Separation Training UI - Installer
+echo  (Portable Micromamba Edition)
 echo =======================================================
 echo.
 
@@ -26,7 +27,7 @@ set "MAMBA_ROOT_PREFIX=%MICROMAMBA_DIR%\root"
 set "ENV_DIR=%REPO_DIR%\env"
 
 set "REPO_URL=https://github.com/SUC-DriverOld/MSST-WebUI.git"
-set "MICROMAMBA_URL=https://micro.mamba.pm/api/micromamba/win-64/latest"
+set "MICROMAMBA_URL=https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64.exe"
 
 REM =======================================================
 REM  2. PERFORMANCE TIMER START
@@ -64,30 +65,17 @@ if not exist "%REPO_DIR%" mkdir "%REPO_DIR%"
 if exist "%MAMBA_EXE%" (
     echo [INFO] Micromamba binary is already present. Skipping download...
 ) else (
-    echo [PROCESS] Downloading portable Micromamba...
+    echo [PROCESS] Downloading portable Micromamba EXE...
     if not exist "%MICROMAMBA_DIR%" mkdir "%MICROMAMBA_DIR%"
     
-    curl -L "%MICROMAMBA_URL%" -o "%MICROMAMBA_DIR%\micromamba.tar.bz2"
-    
-    if not exist "%MICROMAMBA_DIR%\micromamba.tar.bz2" (
-        echo [ERROR] Micromamba download failed. Please check your internet connection.
-        goto :error_exit
-    )
-    
-    echo [PROCESS] Extracting Micromamba...
-    tar -xf "%MICROMAMBA_DIR%\micromamba.tar.bz2" -C "%MICROMAMBA_DIR%" Library/bin/micromamba.exe
-    
-    move "%MICROMAMBA_DIR%\Library\bin\micromamba.exe" "%MAMBA_EXE%" >nul
-    rmdir /s /q "%MICROMAMBA_DIR%\Library"
-    del "%MICROMAMBA_DIR%\micromamba.tar.bz2"
+    curl -L "%MICROMAMBA_URL%" -o "%MAMBA_EXE%"
     
     if not exist "%MAMBA_EXE%" (
-        echo [ERROR] Failed to extract Micromamba.
+        echo [ERROR] Micromamba download failed.
         goto :error_exit
     )
-    echo [SUCCESS] Micromamba downloaded and extracted.
+    echo [SUCCESS] Micromamba downloaded.
 )
-echo.
 
 REM =======================================================
 REM  5. REPOSITORY CLONING AND SETUP
