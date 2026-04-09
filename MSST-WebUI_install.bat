@@ -27,7 +27,7 @@ set "MAMBA_ROOT_PREFIX=%MICROMAMBA_DIR%\root"
 set "ENV_DIR=%REPO_DIR%\env"
 
 set "REPO_URL=https://github.com/SUC-DriverOld/MSST-WebUI.git"
-set "MICROMAMBA_URL=https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64.exe"
+set "MICROMAMBA_URL=https://micro.mamba.pm/api/micromamba/win-64/latest"
 
 REM =======================================================
 REM  2. PERFORMANCE TIMER START
@@ -65,17 +65,30 @@ if not exist "%REPO_DIR%" mkdir "%REPO_DIR%"
 if exist "%MAMBA_EXE%" (
     echo [INFO] Micromamba binary is already present. Skipping download...
 ) else (
-    echo [PROCESS] Downloading portable Micromamba EXE...
+    echo [PROCESS] Downloading portable Micromamba...
     if not exist "%MICROMAMBA_DIR%" mkdir "%MICROMAMBA_DIR%"
     
-    curl -L "%MICROMAMBA_URL%" -o "%MAMBA_EXE%"
+    curl -L "%MICROMAMBA_URL%" -o "%MICROMAMBA_DIR%\micromamba.tar.bz2"
     
-    if not exist "%MAMBA_EXE%" (
-        echo [ERROR] Micromamba download failed.
+    if not exist "%MICROMAMBA_DIR%\micromamba.tar.bz2" (
+        echo [ERROR] Micromamba download failed. Please check your internet connection.
         goto :error_exit
     )
-    echo [SUCCESS] Micromamba downloaded.
+    
+    echo [PROCESS] Extracting Micromamba...
+    tar -xf "%MICROMAMBA_DIR%\micromamba.tar.bz2" -C "%MICROMAMBA_DIR%" Library/bin/micromamba.exe
+    
+    move "%MICROMAMBA_DIR%\Library\bin\micromamba.exe" "%MAMBA_EXE%" >nul
+    rmdir /s /q "%MICROMAMBA_DIR%\Library"
+    del "%MICROMAMBA_DIR%\micromamba.tar.bz2"
+    
+    if not exist "%MAMBA_EXE%" (
+        echo [ERROR] Failed to extract Micromamba.
+        goto :error_exit
+    )
+    echo [SUCCESS] Micromamba downloaded and extracted.
 )
+echo.
 
 REM =======================================================
 REM  5. REPOSITORY CLONING AND SETUP
@@ -186,7 +199,10 @@ if errorlevel 1 (
     goto :error_exit
 )
 
-echo [PROCESS] Installing project requirements...
+echo [PROCESS] Pre-installing problematic binaries via Micromamba...
+"%MAMBA_EXE%" install -p "%ENV_DIR%" -c conda-forge numba llvmlite scikit-learn cython pyyaml ffmpeg pesq -y
+
+echo [PROCESS] Installing dependencies via Pip...
 "%MAMBA_EXE%" run -p "%ENV_DIR%" pip install --no-cache-dir -r "%REPO_DIR%\requirements_clean.txt"
 
 REM Remove temporary file after successful installation
